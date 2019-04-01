@@ -1,26 +1,3 @@
-ÊµÑéÆ÷²Ä:
-	Ì½Ë÷ÕßSTM32F4¿ª·¢°å
-	
-ÊµÑéÄ¿µÄ:
-	±¾ÊµÑéÎªÐÂ½¨¹¤³ÌÊµÑé£¬½ö¹©´ó¼ÒÐÂ½¨¹¤³ÌÊ±²Î¿¼¡£
-	ÐÂ½¨¹¤³ÌÏêÏ¸²½Öè£¬Çë¿´¡¶STM32F4¿ª·¢Ö¸ÄÏ-¿âº¯Êý°æ±¾¡·µÚ3.3½Ú¡£
-	
-Ó²¼þ×ÊÔ´:
-	1,´®¿Ú1(²¨ÌØÂÊ:115200,PA9/PA10Á¬½ÓÔÚ°åÔØUSB×ª´®¿ÚÐ¾Æ¬CH340ÉÏÃæ)
-	
-ÊµÑéÏÖÏó:
-	±¾ÊµÑéÏÂÔØºó£¬´®¿Ú1½«²»Í£µÄÊä³ötµÄÖµ£¬´ò¿ªµçÄÔ´®¿Úµ÷ÊÔÖúÊÖ¼´¿É²é¿´ÏÖÏó¡£ 
-	
-×¢ÒâÊÂÏî:
-	ÎÞ.
-
-
-					ÕýµãÔ­×Ó@ALIENTEK
-					2014-10-24
-					¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾
-					µç»°£º020-38271790
-					´«Õæ£º020-36773971
-					¹ºÂò£ºhttp://shop62103354.taobao.com
-					http://shop62057469.taobao.com
-					¹«Ë¾ÍøÕ¾£ºwww.alientek.com
-					¼¼ÊõÂÛÌ³£ºwww.openedv.com
+updatedï¼š2019 04 01
+æ„šäººèŠ‚å¿«ä¹ï¼
+æœ¬æ¬¡ç§¯åˆ†èµ›Bé¢˜   é€šè¿‡ADC+DMA+FFTå®žçŽ°ç®€å•çš„å¤±çœŸä¿¡å·æµ‹é‡ä»ªåŠŸèƒ½
