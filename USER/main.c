@@ -6,20 +6,20 @@
 #include "adc.h"
 #include "timer.h"
 
-#define poolsize (1024)
-#define fft_size (1024)
-float fre_sampling = 42682;
+#define poolsize (1024)    /* æ¯æ¬¡DMAä¼ è¾“çš„ADCé‡‡æ ·ç‚¹æ•° */
+#define fft_size (1024)    /* fftç‚¹æ•° */
+float fre_sampling = 42682;    /* ADCçš„é‡‡æ ·é¢‘ç‡ï¼š 1/(ADCCLK * (Tsampling+12))   å…¶ä¸­ï¼ˆTsampling+12ï¼‰æŒ‡çš„æ˜¯é‡‡ä¸¤ä¸ªç‚¹ä¹‹é—´çš„å‘¨æœŸ  */
 extern uint16_t datapool_adc[poolsize];
 extern uint8_t flag_2;
 
-//Ê§Õæ¶ÈÏà¹Ø
+//å¤±çœŸåº¦ç›¸å…³çš„å˜é‡
 float value1;
 float value2;
 float ave = 0;
 float *p1 = &value1;
 float *p2 = &value2;
-int index_position;
-int cnt = 0;//ÓÃÓÚ½«¸ß´ÎĞ³²¨´«¸øÊı×érmsµÄ¼ÆÊı
+int index_position;  /*æŸä¸€æ•°ç»„ä¸‹æ ‡*/
+int cnt = 0; /*ç»Ÿè®¡åœ¨1024ä¸ªç‚¹å†…ï¼Œå‡ºç°å¥‡æ¬¡è°æ³¢çš„æ¬¡æ•°*/
 
 
 
@@ -30,40 +30,40 @@ q15_t datapool_adc1[fft_size];
 q15_t adc1_output[fft_size*2];
 q15_t adc1_outcome_q15[fft_size];
 float32_t adc1_outcome_f32[fft_size];
-float32_t adc1_voltage_f32[fft_size];
+float32_t adc1_voltage_f32[fft_size]; /* ADCé‡‡æ ·å€¼-->å®é™…ç”µå‹å€¼ */
 float32_t adc_output_f32[fft_size*2];
-float32_t adc1_voltage_f32_over[1500]; //·Ö×ÓÊı×é
-float32_t adc1_voltage_f32_below[1500];  //·ÖÄ¸Êı×é
+float32_t adc1_voltage_f32_over[1500]; //åˆ†å­æ•°ç»„
+float32_t adc1_voltage_f32_below[1500];  //åˆ†æ¯æ•°ç»„
 
 uint8_t signal = 0;
 int index_arr;
 int index_arr_static;
 float MAX;
 
+/* ä¸²å£å‘é€å‡½æ•° */
 void HMISendb(u8 k);
 void HMISends(char *buf1);
 u8 idfind(u8 *buf,u8 *val,u8 len);
 
 int main()
 {
-//¾­¼ÆËã£¬²âÁ¿Ö±Á÷µÄ»°£¬outcome_f32µÄÖ±Á÷·ÖÁ¿ a*32768/597 µÄ½á¹ûÔ¼ÎªÊµ¼Ê½á¹û£¬µ¥´¿Ö±Á÷ÊÇÏßĞÔµÄ
-//×îºóÁ½²½ÖĞ£¬Èç¹ûÏÈ×ª»»³Éf32ÔÙÇóÄ££¬ÓëÏÈÇóÄ£ÖµÔÙ×ª»»´ğ°¸²»Í¬£¬Ê²Ã´Çé¿ö£¿ÆäÖĞÓĞÒ»²¿·ÖÒª³ı32ÊÇÎªÊ²Ã´
-//fre_ic/(42682/1024)	   134615
+	//fre_ic/(42682/1024)	   
 	delay_init(168);
 	uart_init(9600);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-	
-	MYGPIO_Init();
-	// PF9->TIM14   PF9->TIM9
-	TIM9_PWM_Init(100 - 1,168 - 1);
-	TIM14_PWM_Init(100 - 1,84 - 1);
-	//MYADC_Init();
-	//START();
 	MYDMA_ADC_Init();
 	TIM5_IC_Init();
+	MYGPIO_Init();
+	
+	// PF9->TIM14   PF9->TIM9
+	// è‡ªå‡ºæ–¹æ³¢æ£€æµ‹å¤±çœŸåº¦
+	TIM9_PWM_Init(100 - 1,168 - 1);
+	TIM14_PWM_Init(100 - 1,84 - 1);
+
+
 	
 	
-	uint16_t i = 0;//Ñ­»·¿ØÖÆ±äÁ¿
+	uint16_t i = 0;//å¾ªç¯æ§åˆ¶å˜é‡
 	extern float fre_ic;
 	
 	arm_rfft_instance_q15 S;
@@ -72,6 +72,8 @@ int main()
 				HMISendb(0xff);	
 	while(1)
 	{
+		
+		/*è¾“å…¥æ•è·è·å¾—é¢‘ç‡ï¼Œå› æ­¤è½®è¯¢+æ ‡å¿—ä½ï¼Œæ¯å¾—åˆ°ä¸€æ¬¡é¢‘ç‡æœ‰æ•ˆå€¼ï¼Œå¹¶ä¸”DMAä¼ è¾“ç»“æŸå°±è¿›è¡Œå¤„ç†*/
 		while((flag_2 != 1)&&(DMA_GetFlagStatus(DMA2_Stream0,DMA_FLAG_TCIF0)) != SET);
 				flag_2 = 0;
 				DMA_ClearFlag(DMA2_Stream0,DMA_FLAG_TCIF0);
@@ -81,19 +83,21 @@ int main()
 					datapool_adc1[i] = datapool_adc[i];
 				}
 				
+				
+		
 				/* FFT */
 				arm_rfft_init_q15(&S,fft_size,0,1);
 				arm_rfft_q15(&S,datapool_adc1,adc1_output);
 		for(i=0;i<(poolsize*2);i++)
 				{
-					adc_output_f32[i] = (float32_t)adc1_output[i];
+					adc_output_f32[i] = (float32_t)adc1_output[i];  //å¼ºåˆ¶è½¬æ¢æˆf32ï¼Œæé«˜ç²¾åº¦
 				}
 				arm_cmplx_mag_f32(adc_output_f32,adc1_outcome_f32,fft_size);		
 				
 				
 				
 				
-				/* »ñµÃadc½ø¹ıfftºóµÄÕæÊµµçÑ¹Öµ */
+				/* è·å¾—adcç»è¿‡fftåçš„çœŸå®ç”µå‹å€¼ */
 				for(i = 0;i<fft_size;i++)
 				{
 					adc1_voltage_f32[i] = adc1_outcome_f32[i]/4096*3.3;
@@ -101,7 +105,7 @@ int main()
 				
 				
 				
-				/*ÕÒµ½Ò»´ÎĞ³²¨ËùÔÚÔªËØÏÂ±êindex*/
+				/*æ‰¾åˆ°ä¸€æ¬¡è°æ³¢æ‰€åœ¨å…ƒç´ ä¸‹æ ‡indexçš„å¤§è‡´ä½ç½®*/
 				if((fre_ic/(fre_sampling/fft_size)) - ((int)(fre_ic/(fre_sampling/fft_size))) >= 0.5)
 				{
 					index_arr = (int)(fre_ic/(fre_sampling/fft_size))+1;
@@ -113,8 +117,9 @@ int main()
 				
 				index_arr_static = index_arr;
 				
-				/* Î»ÖÃÑ°ÕÒÓÅ»¯ */
-				/* ´ıÓÅ»¯£º¿¼ÂÇµ½¿ÉÄÜ»áÔÚ10ÒÔÄÚ³öÏÖÒ»´ÎĞ³²¨ */
+				/* ä½ç½®å¯»æ‰¾ä¼˜åŒ– */
+				/* è€ƒè™‘åˆ°å¯èƒ½ä¼šåœ¨10ä»¥å†…å‡ºç°ä¸€æ¬¡è°æ³¢ï¼Œæ‰€ä»¥å°†fre_ic<=400å•ç‹¬è€ƒè™‘ */
+				/* ä¼˜åŒ–æ–¹å‘ï¼šæ²¡æœ‰è€ƒè™‘åˆ°é¢‘è°±æ³„éœ²çš„é—®é¢˜ */
 				if(fre_ic<=400)
 				{
 					for(i = 0;(2*i+1)*index_arr_static<fft_size;i++)
@@ -145,7 +150,7 @@ int main()
 							adc1_voltage_f32_over[cnt-1] = MAX;
 							cnt++;
 							index_arr = (2*cnt+1)*index_arr_static;
-							MAX = 0xfffff;   //½«maxÈ¡´ó£¬±ÜÃâÏÂÒ»´ÎÑ­»·ÎóÈëÅĞ¶Ï
+							MAX = 0xfffff;   //å°†maxå–å¤§ï¼Œé¿å…ä¸‹ä¸€æ¬¡å¾ªç¯è¯¯å…¥åˆ¤æ–­
 						}
 						
 						
@@ -158,13 +163,14 @@ int main()
 				
 				
 				
-				//RMS¼ÆËã
-				arm_rms_f32(adc1_voltage_f32_over,cnt-1,p1);//·Ö×Ó
-				arm_rms_f32(adc1_voltage_f32_below,cnt,p2);//·ÖÄ¸
+				//RMSè®¡ç®—   å¤±çœŸåº¦çš„å®šä¹‰ï¼šåˆ†å­ä¸ºå»é™¤å™ªå£°ï¼Œç›´æµåˆ†é‡å’Œä¸€æ¬¡è°æ³¢åå‰©ä¸‹é¢‘ç‡åˆ†é‡å¹…å€¼å‡æ–¹æ ¹
+				//			åˆ†æ¯ä¸ºå»é™¤å™ªå£°ï¼Œç›´æµåˆ†é‡åå‰©ä¸‹é¢‘ç‡åˆ†é‡å¹…å€¼å‡æ–¹æ ¹
+				arm_rms_f32(adc1_voltage_f32_over,cnt-1,p1);//åˆ†å­
+				arm_rms_f32(adc1_voltage_f32_below,cnt,p2);//åˆ†æ¯
 				ave = value1/value2;
 				
 				
-				
+				/* æ˜¾ç¤ºåˆ°ä¸²å£ä¸Š */
 				printf("t0.txt=\"%.3f%%\" ",ave*100);
 				HMISendb(0xff);
 				printf("t3.txt=\"%.3fhz\" ",fre_ic);
@@ -181,37 +187,38 @@ int main()
 	
 	
 	
-	void HMISendb(u8 k)		         //0xff·¢ËÍº¯Êı
+	void HMISendb(u8 k)		         //0xffå‘é€å‡½æ•°
 {		 
 	u8 i;
 	 for(i=0;i<3;i++)
 	 {
 	 if(k!=0)
 	 	{
-			USART_SendData(USART1,k);  //·¢ËÍÒ»¸ö×Ö½Ú
-			while(USART_GetFlagStatus(USART1,USART_FLAG_TXE)==RESET){};//µÈ´ı·¢ËÍ½áÊø
+			USART_SendData(USART1,k);  //å‘é€ä¸€ä¸ªå­—èŠ‚
+			while(USART_GetFlagStatus(USART1,USART_FLAG_TXE)==RESET){};//ç­‰å¾…å‘é€ç»“æŸ
 		}
 	 else 
 	 return ;
 
 	 } 
 } 
-void HMISends(char *buf1)		  //×Ö·û´®·¢ËÍº¯Êı
+
+	void HMISends(char *buf1)		  //å­—ç¬¦ä¸²å‘é€å‡½æ•°
 {
 	u8 i=0;
 	while(1)
 	{
 	 if(buf1[i]!=0)
 	 	{
-			USART_SendData(USART1,buf1[i]);  //·¢ËÍÒ»¸ö×Ö½Ú
-			while(USART_GetFlagStatus(USART1,USART_FLAG_TXE)==RESET){};//µÈ´ı·¢ËÍ½áÊø
+			USART_SendData(USART1,buf1[i]);  //å‘é€ä¸€ä¸ªå­—èŠ‚
+			while(USART_GetFlagStatus(USART1,USART_FLAG_TXE)==RESET){};//ç­‰å¾…å‘é€ç»“æŸ
 		 	i++;
 		}
 	 else 
 	 return ;
 
-		}
 	}
+}
 
 
 	
